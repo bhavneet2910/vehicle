@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext";
 
@@ -86,27 +86,36 @@ const VehicleSelectionPage = () => {
       submittedAt: new Date().toISOString()
     };
 
-    // Get existing bookings from localStorage
-    const existingBookings = JSON.parse(localStorage.getItem('vehicleBookings') || '[]');
-    
-    // Add new booking
-    const updatedBookings = [...existingBookings, newBooking];
-    
-    // Save to localStorage
-    localStorage.setItem('vehicleBookings', JSON.stringify(updatedBookings));
-
-    alert("Vehicle booking submitted successfully! An administrator will review your request.");
-    setShowBookingForm(false);
-    setSelectedVehicle(null);
-    setBookingData({
-      departureDate: "",
-      departureTime: "",
-      returnDate: "",
-      returnTime: "",
-      destination: "",
-      purpose: "",
-      passengers: 1
-    });
+    // Send booking to backend
+    fetch('http://localhost:3001/api/requests', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        employeeId: user.id,
+        details: newBooking
+      })
+    })
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to submit booking');
+        return res.json();
+      })
+      .then(data => {
+        alert("Vehicle booking submitted successfully! An administrator will review your request.");
+        setShowBookingForm(false);
+        setSelectedVehicle(null);
+        setBookingData({
+          departureDate: "",
+          departureTime: "",
+          returnDate: "",
+          returnTime: "",
+          destination: "",
+          purpose: "",
+          passengers: 1
+        });
+      })
+      .catch(err => {
+        alert("Failed to submit booking. Please try again.");
+      });
   };
 
   const handleLogout = () => {
@@ -114,9 +123,14 @@ const VehicleSelectionPage = () => {
     navigate("/login");
   };
 
+  useEffect(() => {
+    if (!user) {
+      navigate("/login");
+    }
+  }, [user, navigate]);
+
   if (!user) {
-    navigate("/login");
-    return null;
+    return null; // Don't render anything while redirecting
   }
 
   return (
@@ -241,8 +255,14 @@ const VehicleSelectionPage = () => {
               <input
                 type="number"
                 className="form-input"
-                value={bookingData.passengers}
-                onChange={(e) => setBookingData({...bookingData, passengers: parseInt(e.target.value)})}
+                value={bookingData.passengers === "" ? "" : bookingData.passengers}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setBookingData({
+                    ...bookingData,
+                    passengers: value === "" ? "" : parseInt(value)
+                  });
+                }}
                 min="1"
                 max={selectedVehicle.capacity}
                 required

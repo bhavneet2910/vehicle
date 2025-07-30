@@ -1,9 +1,7 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router } from "react-router-dom";
 import { AuthContext } from "./context/AuthContext";
-import LoginPage from "./features/login/LoginPage";
-import VehicleSelectionPage from "./features/vehicle/VehicleSelectionPage";
-import AdminDashboard from "./features/admin/AdminDashboard";
+import AppRoutes from "./routes/AppRoutes";
 
 function App() {
   const [user, setUser] = React.useState(null);
@@ -20,12 +18,7 @@ function App() {
     <AuthContext.Provider value={{ user, login, logout }}>
       <Router>
         <div>
-          <Routes>
-            <Route path="/" element={<LoginPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/vehicle-selection" element={<VehicleSelectionPage />} />
-            <Route path="/admin/dashboard" element={<AdminDashboard />} />
-          </Routes>
+          <AppRoutes />
         </div>
       </Router>
     </AuthContext.Provider>

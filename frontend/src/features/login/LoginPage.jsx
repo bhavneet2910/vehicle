@@ -8,13 +8,17 @@ const LoginPage = () => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [loginMode, setLoginMode] = useState("employee"); // "employee" or "admin"
+  const [loginMode, setLoginMode] = useState("employee"); // "employee", "admin", or "co"
+  const [name, setName] = useState("");
+  const [designation, setDesignation] = useState("");
+  const [cpfNumber, setCpfNumber] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!email || !password) {
+    if (!email || !password || !name || !designation || !cpfNumber || !phoneNumber) {
       setError("All fields are required.");
       return;
     }
@@ -23,10 +27,17 @@ const LoginPage = () => {
     setError("");
 
     try {
-      const userData = await authService.login(email, password, loginMode);
+      const userData = await authService.login(email, password, loginMode, {
+        name,
+        designation,
+        cpfNumber,
+        phoneNumber
+      });
       login(userData);
       if (userData.role === "admin") {
         navigate("/admin/dashboard");
+      } else if (userData.role === "co") {
+        navigate("/co/dashboard");
       } else {
         navigate("/vehicle-selection");
       }
@@ -70,6 +81,22 @@ const LoginPage = () => {
             Employee Login
           </button>
           <button
+            onClick={() => setLoginMode("co")}
+            style={{
+              flex: 1,
+              padding: "12px",
+              border: "none",
+              borderRadius: "8px",
+              background: loginMode === "co" ? "#667eea" : "transparent",
+              color: loginMode === "co" ? "white" : "#333",
+              fontWeight: "600",
+              cursor: "pointer",
+              transition: "all 0.3s ease"
+            }}
+          >
+            CO Login
+          </button>
+          <button
             onClick={() => setLoginMode("admin")}
             style={{
               flex: 1,
@@ -88,7 +115,7 @@ const LoginPage = () => {
         </div>
 
         <h2 style={{ textAlign: "center", marginBottom: "30px", color: "#333", fontSize: "1.8rem" }}>
-          {loginMode === "admin" ? "Admin Access" : "Welcome Back"}
+          {loginMode === "admin" ? "Admin Access" : loginMode === "co" ? "CO Access" : "Welcome Back"}
         </h2>
 
         {error && (
@@ -105,6 +132,54 @@ const LoginPage = () => {
         )}
 
         <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label className="form-label">Name</label>
+            <input
+              type="text"
+              className="form-input"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Enter your name"
+              disabled={isLoading}
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Designation</label>
+            <input
+              type="text"
+              className="form-input"
+              value={designation}
+              onChange={(e) => setDesignation(e.target.value)}
+              placeholder="Enter your designation"
+              disabled={isLoading}
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">CPF Number</label>
+            <input
+              type="text"
+              className="form-input"
+              value={cpfNumber}
+              onChange={(e) => setCpfNumber(e.target.value)}
+              placeholder="Enter your CPF number"
+              disabled={isLoading}
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Phone Number</label>
+            <input
+              type="tel"
+              className="form-input"
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
+              placeholder="Enter your phone number"
+              disabled={isLoading}
+            />
+          </div>
+
           <div className="form-group">
             <label className="form-label">Email Address</label>
             <input
