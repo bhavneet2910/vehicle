@@ -53,9 +53,18 @@ const AdminDashboard = () => {
       <div className="card fade-in">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "30px" }}>
           <h2>Requests Pending L1 Review</h2>
-          <button onClick={handleLogout} className="btn btn-secondary">
-            Logout
-          </button>
+          <div style={{ display: "flex", gap: "10px" }}>
+            <button 
+              onClick={() => navigate("/admin/request-history")} 
+              className="btn btn-primary"
+              style={{ background: "#17a2b8", boxShadow: "0 4px 8px rgba(23, 162, 184, 0.3)" }}
+            >
+              📋 View All Requests
+            </button>
+            <button onClick={handleLogout} className="btn btn-secondary">
+              Logout
+            </button>
+          </div>
         </div>
         <div>
           {requests.length === 0 ? (

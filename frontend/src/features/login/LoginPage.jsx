@@ -9,6 +9,7 @@ const LoginPage = () => {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [loginMode, setLoginMode] = useState("employee"); // "employee", "admin", or "co"
+  const [authMode, setAuthMode] = useState("login"); // "login" or "signup"
   const [name, setName] = useState("");
   const [designation, setDesignation] = useState("");
   const [cpfNumber, setCpfNumber] = useState("");
@@ -18,21 +19,40 @@ const LoginPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!email || !password || !name || !designation || !cpfNumber || !phoneNumber) {
-      setError("All fields are required.");
-      return;
+    
+    if (authMode === "login") {
+      // Login mode - only CPF and password required
+      if (!cpfNumber || !password) {
+        setError("CPF Number and Password are required.");
+        return;
+      }
+    } else {
+      // Signup mode - all fields required
+      if (!email || !password || !name || !designation || !cpfNumber || !phoneNumber) {
+        setError("All fields are required.");
+        return;
+      }
     }
 
     setIsLoading(true);
     setError("");
 
     try {
-      const userData = await authService.login(email, password, loginMode, {
-        name,
-        designation,
-        cpfNumber,
-        phoneNumber
-      });
+      let userData;
+      
+      if (authMode === "login") {
+        // Login with CPF and password - let system detect role automatically
+        userData = await authService.login(cpfNumber, password);
+      } else {
+        // Signup with all details
+        userData = await authService.signup(email, password, loginMode, {
+          name,
+          designation,
+          cpfNumber,
+          phoneNumber
+        });
+      }
+      
       login(userData);
       if (userData.role === "admin") {
         navigate("/admin/dashboard");
@@ -42,80 +62,139 @@ const LoginPage = () => {
         navigate("/vehicle-selection");
       }
     } catch (err) {
-      setError("Invalid credentials.");
+      setError(authMode === "login" ? "Invalid CPF or password." : "Registration failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const clearForm = () => {
+    setEmail("");
+    setPassword("");
+    setName("");
+    setDesignation("");
+    setCpfNumber("");
+    setPhoneNumber("");
+    setError("");
+  };
+
+  const handleAuthModeChange = (mode) => {
+    setAuthMode(mode);
+    clearForm();
   };
 
   return (
     <div className="container">
       <div className="header fade-in">
         <h1>Government Vehicle Management</h1>
-        <p>Login to access vehicle booking system</p>
+        <p>{authMode === "login" ? "Login to access vehicle booking system" : "Create your account"}</p>
       </div>
       
       <div className="card fade-in" style={{ maxWidth: "400px", margin: "0 auto" }}>
-        {/* Login Mode Toggle */}
+        {/* Auth Mode Toggle */}
         <div style={{ 
           display: "flex", 
           background: "#f8f9fa", 
           borderRadius: "12px", 
           padding: "4px", 
-          marginBottom: "30px" 
+          marginBottom: "20px" 
         }}>
           <button
-            onClick={() => setLoginMode("employee")}
+            onClick={() => handleAuthModeChange("login")}
             style={{
               flex: 1,
               padding: "12px",
               border: "none",
               borderRadius: "8px",
-              background: loginMode === "employee" ? "#667eea" : "transparent",
-              color: loginMode === "employee" ? "white" : "#333",
+              background: authMode === "login" ? "#667eea" : "transparent",
+              color: authMode === "login" ? "white" : "#333",
               fontWeight: "600",
               cursor: "pointer",
               transition: "all 0.3s ease"
             }}
           >
-            Employee Login
+            Login
           </button>
           <button
-            onClick={() => setLoginMode("co")}
+            onClick={() => handleAuthModeChange("signup")}
             style={{
               flex: 1,
               padding: "12px",
               border: "none",
               borderRadius: "8px",
-              background: loginMode === "co" ? "#667eea" : "transparent",
-              color: loginMode === "co" ? "white" : "#333",
+              background: authMode === "signup" ? "#667eea" : "transparent",
+              color: authMode === "signup" ? "white" : "#333",
               fontWeight: "600",
               cursor: "pointer",
               transition: "all 0.3s ease"
             }}
           >
-            CO Login
-          </button>
-          <button
-            onClick={() => setLoginMode("admin")}
-            style={{
-              flex: 1,
-              padding: "12px",
-              border: "none",
-              borderRadius: "8px",
-              background: loginMode === "admin" ? "#667eea" : "transparent",
-              color: loginMode === "admin" ? "white" : "#333",
-              fontWeight: "600",
-              cursor: "pointer",
-              transition: "all 0.3s ease"
-            }}
-          >
-            Admin Login
+            Signup
           </button>
         </div>
 
+        {/* Login Mode Toggle - Only show for signup */}
+        {authMode === "signup" && (
+          <div style={{ 
+            display: "flex", 
+            background: "#f8f9fa", 
+            borderRadius: "12px", 
+            padding: "4px", 
+            marginBottom: "30px" 
+          }}>
+            <button
+              onClick={() => setLoginMode("employee")}
+              style={{
+                flex: 1,
+                padding: "12px",
+                border: "none",
+                borderRadius: "8px",
+                background: loginMode === "employee" ? "#667eea" : "transparent",
+                color: loginMode === "employee" ? "white" : "#333",
+                fontWeight: "600",
+                cursor: "pointer",
+                transition: "all 0.3s ease"
+              }}
+            >
+              Employee
+            </button>
+            <button
+              onClick={() => setLoginMode("co")}
+              style={{
+                flex: 1,
+                padding: "12px",
+                border: "none",
+                borderRadius: "8px",
+                background: loginMode === "co" ? "#667eea" : "transparent",
+                color: loginMode === "co" ? "white" : "#333",
+                fontWeight: "600",
+                cursor: "pointer",
+                transition: "all 0.3s ease"
+              }}
+            >
+              CO
+            </button>
+            <button
+              onClick={() => setLoginMode("admin")}
+              style={{
+                flex: 1,
+                padding: "12px",
+                border: "none",
+                borderRadius: "8px",
+                background: loginMode === "admin" ? "#667eea" : "transparent",
+                color: loginMode === "admin" ? "white" : "#333",
+                fontWeight: "600",
+                cursor: "pointer",
+                transition: "all 0.3s ease"
+              }}
+            >
+              Admin
+            </button>
+          </div>
+        )}
+
         <h2 style={{ textAlign: "center", marginBottom: "30px", color: "#333", fontSize: "1.8rem" }}>
-          {loginMode === "admin" ? "Admin Access" : loginMode === "co" ? "CO Access" : "Welcome Back"}
+          {authMode === "login" ? "Welcome Back" : loginMode === "admin" ? "Admin Registration" : loginMode === "co" ? "CO Registration" : "Employee Registration"}
         </h2>
 
         {error && (
@@ -132,30 +211,7 @@ const LoginPage = () => {
         )}
 
         <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label className="form-label">Name</label>
-            <input
-              type="text"
-              className="form-input"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Enter your name"
-              disabled={isLoading}
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Designation</label>
-            <input
-              type="text"
-              className="form-input"
-              value={designation}
-              onChange={(e) => setDesignation(e.target.value)}
-              placeholder="Enter your designation"
-              disabled={isLoading}
-            />
-          </div>
-
+          {/* CPF Number - Required for both login and signup */}
           <div className="form-group">
             <label className="form-label">CPF Number</label>
             <input
@@ -168,30 +224,7 @@ const LoginPage = () => {
             />
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Phone Number</label>
-            <input
-              type="tel"
-              className="form-input"
-              value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
-              placeholder="Enter your phone number"
-              disabled={isLoading}
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Email Address</label>
-            <input
-              type="email"
-              className="form-input"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your email"
-              disabled={isLoading}
-            />
-          </div>
-
+          {/* Password - Required for both login and signup */}
           <div className="form-group">
             <label className="form-label">Password</label>
             <input
@@ -204,26 +237,79 @@ const LoginPage = () => {
             />
           </div>
 
+          {/* Additional fields only for signup */}
+          {authMode === "signup" && (
+            <>
+              <div className="form-group">
+                <label className="form-label">Name</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Enter your name"
+                  disabled={isLoading}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Designation</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={designation}
+                  onChange={(e) => setDesignation(e.target.value)}
+                  placeholder="Enter your designation"
+                  disabled={isLoading}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Phone Number</label>
+                <input
+                  type="tel"
+                  className="form-input"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  placeholder="Enter your phone number"
+                  disabled={isLoading}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Email Address</label>
+                <input
+                  type="email"
+                  className="form-input"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your email"
+                  disabled={isLoading}
+                />
+              </div>
+            </>
+          )}
+
           <button
             type="submit"
             className="btn btn-primary"
             style={{ width: "100%", marginTop: "10px" }}
             disabled={isLoading}
           >
-            {isLoading ? "Signing In..." : "Sign In"}
+            {isLoading ? (authMode === "login" ? "Signing In..." : "Creating Account...") : (authMode === "login" ? "Sign In" : "Create Account")}
           </button>
         </form>
 
         <div style={{ textAlign: "center", marginTop: "20px", color: "#666" }}>
           <small>
-            {loginMode === "admin" 
-              ? "Demo: Use any email with 'admin' in it to login as admin" 
-              : "Demo: Use any email/password to login as employee"
+            {authMode === "login" 
+              ? "Demo: Use any CPF number and password to login" 
+              : "Demo: Fill all fields to create your account"
             }
           </small>
         </div>
 
-        {loginMode === "admin" && (
+        {authMode === "signup" && loginMode === "admin" && (
           <div style={{ 
             background: "#e3f2fd", 
             padding: "15px", 
@@ -240,6 +326,48 @@ const LoginPage = () => {
             </ul>
           </div>
         )}
+
+        {/* Debug Section - Remove this in production */}
+        <div style={{ 
+          background: "#fff3cd", 
+          padding: "15px", 
+          borderRadius: "8px", 
+          marginTop: "20px",
+          border: "1px solid #ffc107"
+        }}>
+          <h4 style={{ marginBottom: "10px", color: "#856404" }}>Debug: Stored Users</h4>
+          <div style={{ fontSize: "12px", color: "#856404" }}>
+            {(() => {
+              const users = authService.getAllUsers();
+              if (users.length === 0) {
+                return "No users stored yet. Sign up to create users.";
+              }
+              return users.map(user => (
+                <div key={user.cpfNumber} style={{ marginBottom: "5px" }}>
+                  <strong>CPF:</strong> {user.cpfNumber} | <strong>Role:</strong> {user.role} | <strong>Name:</strong> {user.name}
+                </div>
+              ));
+            })()}
+          </div>
+          <button 
+            onClick={() => {
+              authService.clearStorage();
+              window.location.reload();
+            }}
+            style={{
+              marginTop: "10px",
+              padding: "5px 10px",
+              background: "#dc3545",
+              color: "white",
+              border: "none",
+              borderRadius: "4px",
+              cursor: "pointer",
+              fontSize: "12px"
+            }}
+          >
+            Clear All Users
+          </button>
+        </div>
       </div>
     </div>
   );

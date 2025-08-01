@@ -1,6 +1,7 @@
 import React from "react";
 import { BrowserRouter as Router } from "react-router-dom";
 import { AuthContext } from "./context/AuthContext";
+import { NotificationProvider } from "./context/NotificationContext";
 import AppRoutes from "./routes/AppRoutes";
 
 function App() {
@@ -16,11 +17,13 @@ function App() {
 
   return (
     <AuthContext.Provider value={{ user, login, logout }}>
-      <Router>
-        <div>
-          <AppRoutes />
-        </div>
-      </Router>
+      <NotificationProvider>
+        <Router>
+          <div>
+            <AppRoutes />
+          </div>
+        </Router>
+      </NotificationProvider>
     </AuthContext.Provider>
   );
 }

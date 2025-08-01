@@ -1,12 +1,18 @@
 import React, { useState, useContext, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext";
+import { useNotification } from "../../context/NotificationContext";
+import api from "../../services/api";
 
 const VehicleSelectionPage = () => {
   const { user, logout } = useContext(AuthContext);
+  const { addNotification } = useNotification();
   const navigate = useNavigate();
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [showBookingForm, setShowBookingForm] = useState(false);
+  const [userRequests, setUserRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [hasShownLoginNotification, setHasShownLoginNotification] = useState(false);
   const [bookingData, setBookingData] = useState({
     departureDate: "",
     departureTime: "",
@@ -57,6 +63,113 @@ const VehicleSelectionPage = () => {
     }
   ];
 
+  // Load user's requests when component mounts
+  useEffect(() => {
+    if (user && user.id) {
+      loadUserRequests();
+    }
+  }, [user]);
+
+  // Show login notifications
+  useEffect(() => {
+    if (userRequests.length > 0 && !hasShownLoginNotification) {
+      showLoginNotifications();
+      setHasShownLoginNotification(true);
+    }
+  }, [userRequests, hasShownLoginNotification]);
+
+  const showLoginNotifications = () => {
+    userRequests.forEach(request => {
+      if (request.status === 'accepted_by_l1') {
+        addNotification({
+          type: 'success',
+          icon: '✅',
+          title: 'Request Accepted!',
+          message: `Your vehicle booking for ${request.details.vehicleName} has been approved!`
+        });
+      } else if (request.status === 'rejected_by_co' || request.status === 'rejected_by_l1') {
+        addNotification({
+          type: 'error',
+          icon: '❌',
+          title: 'Request Rejected',
+          message: `Your vehicle booking for ${request.details.vehicleName} has been rejected.`
+        });
+      } else if (request.status === 'forwarded_to_l1') {
+        addNotification({
+          type: 'info',
+          icon: '📤',
+          title: 'Request Forwarded',
+          message: `Your vehicle booking for ${request.details.vehicleName} has been forwarded to Admin for final approval.`
+        });
+      }
+    });
+  };
+
+  const loadUserRequests = async () => {
+    try {
+      setLoading(true);
+      const requests = await api.getRequests({ 
+        role: 'employee', 
+        employeeId: user.id 
+      });
+      setUserRequests(requests);
+    } catch (error) {
+      console.error('Failed to load user requests:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'accepted_by_l1':
+        return { background: '#d4edda', color: '#155724', border: '#28a745', icon: '✅' };
+      case 'rejected_by_co':
+      case 'rejected_by_l1':
+        return { background: '#f8d7da', color: '#721c24', border: '#dc3545', icon: '❌' };
+      case 'forwarded_to_l1':
+        return { background: '#fff3cd', color: '#856404', border: '#ffc107', icon: '📤' };
+      case 'pending_co':
+        return { background: '#d1ecf1', color: '#0c5460', border: '#17a2b8', icon: '⏳' };
+      default:
+        return { background: '#e2e3e5', color: '#383d41', border: '#6c757d', icon: '❓' };
+    }
+  };
+
+  const getStatusLabel = (status) => {
+    switch (status) {
+      case 'accepted_by_l1':
+        return 'Request Accepted!';
+      case 'rejected_by_co':
+        return 'Request Rejected by CO';
+      case 'rejected_by_l1':
+        return 'Request Rejected by Admin';
+      case 'forwarded_to_l1':
+        return 'Request Forwarded to Admin';
+      case 'pending_co':
+        return 'Request Pending CO Review';
+      default:
+        return status;
+    }
+  };
+
+  const getStatusMessage = (status) => {
+    switch (status) {
+      case 'accepted_by_l1':
+        return 'Your vehicle booking request has been approved! You can proceed with your journey.';
+      case 'rejected_by_co':
+        return 'Your vehicle booking request has been rejected by the CO. Please contact your supervisor for more details.';
+      case 'rejected_by_l1':
+        return 'Your vehicle booking request has been rejected by the Admin. Please contact the administration for more details.';
+      case 'forwarded_to_l1':
+        return 'Your request has been forwarded to the Admin for final approval. You will be notified once a decision is made.';
+      case 'pending_co':
+        return 'Your request is currently under review by the CO. You will be notified once a decision is made.';
+      default:
+        return 'Your request status is being processed.';
+    }
+  };
+
   const handleVehicleSelect = (vehicle) => {
     if (vehicle.status === "available") {
       setSelectedVehicle(vehicle);
@@ -64,7 +177,7 @@ const VehicleSelectionPage = () => {
     }
   };
 
-  const handleBookingSubmit = (e) => {
+  const handleBookingSubmit = async (e) => {
     e.preventDefault();
     
     // Create booking object
@@ -86,36 +199,51 @@ const VehicleSelectionPage = () => {
       submittedAt: new Date().toISOString()
     };
 
-    // Send booking to backend
-    fetch('http://localhost:3001/api/requests', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        employeeId: user.id,
-        details: newBooking
-      })
-    })
-      .then(res => {
-        if (!res.ok) throw new Error('Failed to submit booking');
-        return res.json();
-      })
-      .then(data => {
-        alert("Vehicle booking submitted successfully! An administrator will review your request.");
-        setShowBookingForm(false);
-        setSelectedVehicle(null);
-        setBookingData({
-          departureDate: "",
-          departureTime: "",
-          returnDate: "",
-          returnTime: "",
-          destination: "",
-          purpose: "",
-          passengers: 1
-        });
-      })
-      .catch(err => {
-        alert("Failed to submit booking. Please try again.");
+    try {
+      // Send booking to backend
+      const response = await fetch('http://localhost:3001/api/requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          employeeId: user.id,
+          details: newBooking
+        })
       });
+
+      if (!response.ok) throw new Error('Failed to submit booking');
+      
+      const data = await response.json();
+      
+      // Show success notification
+      addNotification({
+        type: 'success',
+        icon: '📝',
+        title: 'Booking Submitted!',
+        message: 'Your vehicle booking request has been submitted successfully and is under review.'
+      });
+      
+      setShowBookingForm(false);
+      setSelectedVehicle(null);
+      setBookingData({
+        departureDate: "",
+        departureTime: "",
+        returnDate: "",
+        returnTime: "",
+        destination: "",
+        purpose: "",
+        passengers: 1
+      });
+      
+      // Reload user requests to show the new request
+      await loadUserRequests();
+    } catch (err) {
+      addNotification({
+        type: 'error',
+        icon: '❌',
+        title: 'Booking Failed',
+        message: 'Failed to submit booking. Please try again.'
+      });
+    }
   };
 
   const handleLogout = () => {
@@ -139,6 +267,72 @@ const VehicleSelectionPage = () => {
         <h1>Vehicle Booking System</h1>
         <p>Welcome, {user.name}! Select a vehicle for your journey</p>
       </div>
+
+      {/* Notification Section for Request Status */}
+      {userRequests.length > 0 && (
+        <div className="card fade-in" style={{ marginBottom: "20px" }}>
+          <h2 style={{ marginBottom: "20px", color: "#333" }}>
+            📋 Your Request Status
+          </h2>
+          
+          {loading ? (
+            <div style={{ textAlign: "center", padding: "20px", color: "#666" }}>
+              Loading your requests...
+            </div>
+          ) : (
+            <div>
+              {userRequests.map((request) => {
+                const statusStyle = getStatusColor(request.status);
+                return (
+                  <div 
+                    key={request.id} 
+                    className="card" 
+                    style={{ 
+                      marginBottom: "15px", 
+                      borderLeft: `4px solid ${statusStyle.border}`,
+                      background: statusStyle.background + "10"
+                    }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                      <div style={{ flex: 1 }}>
+                        <h3 style={{ marginBottom: "10px", color: "#333" }}>
+                          {statusStyle.icon} {getStatusLabel(request.status)}
+                        </h3>
+                        <p style={{ color: "#666", marginBottom: "10px" }}>
+                          {getStatusMessage(request.status)}
+                        </p>
+                        <div style={{ fontSize: "14px", color: "#666" }}>
+                          <strong>Vehicle:</strong> {request.details.vehicleName} | 
+                          <strong> Destination:</strong> {request.details.destination} | 
+                          <strong> Date:</strong> {request.details.departureDate}
+                        </div>
+                        {request.history && request.history.length > 0 && (
+                          <div style={{ fontSize: "12px", color: "#888", marginTop: "8px" }}>
+                            <strong>Last Updated:</strong> {new Date(request.history[request.history.length - 1].at).toLocaleDateString()}
+                          </div>
+                        )}
+                      </div>
+                      <div style={{
+                        padding: "8px 16px",
+                        borderRadius: "20px",
+                        fontSize: "12px",
+                        fontWeight: "600",
+                        textTransform: "uppercase",
+                        background: statusStyle.background,
+                        color: statusStyle.color,
+                        border: `2px solid ${statusStyle.border}`,
+                        boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
+                      }}>
+                        {request.status.replace(/_/g, ' ')}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="card fade-in">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>

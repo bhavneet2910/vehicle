@@ -220,3 +220,35 @@ body {
     transform: translateX(0);
   }
 }
+
+/* Notification animations */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+/* Notification styles */
+.notification-popup {
+  animation: slideInRight 0.3s ease-out;
+}
+
+.notification-popup.hide {
+  animation: slideOutRight 0.3s ease-in;
+}
