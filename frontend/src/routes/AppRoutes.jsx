@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useContext } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
+import { AuthContext } from "../context/AuthContext";
 import LoginPage from "../features/login/LoginPage";
 import CoDashboard from "../features/admin/CoDashboard";
 import AdminDashboard from "../features/admin/AdminDashboard";
@@ -9,6 +10,8 @@ import RequestHistory from "../features/admin/RequestHistory";
 import VehicleSelectionPage from '../features/vehicle/VehicleSelectionPage';
 
 const AppRoutes = () => {
+  const { user } = useContext(AuthContext);
+  
   return (
     <Routes>
       <Route path="/" element={<Navigate to="/login" />} />
@@ -16,7 +19,7 @@ const AppRoutes = () => {
       {/* <Route path="/employee/dashboard" element={<EmployeeDashboard />} /> */}
       { <Route path="/admin/dashboard" element={<AdminDashboard />} /> }
       <Route path="/admin/request-history" element={<RequestHistory />} />
-      <Route path="/co/dashboard" element={<CoDashboard coUserId={"coUserId1"} />} />
+      <Route path="/co/dashboard" element={<CoDashboard coUserId={user?.cpfNumber} />} />
       <Route path="/co/request-history" element={<RequestHistory />} />
       <Route path="/vehicle-selection" element={<VehicleSelectionPage />} />
       {/* <Route path="*" element={<NotFound />} /> */}

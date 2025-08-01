@@ -22,16 +22,16 @@ app.post('/api/requests', (req, res) => {
 
 // Fetch requests for CO or Admin
 app.get('/api/requests', (req, res) => {
-  const { role, status, employeeId } = req.query;
+  const { role, status, employeeId, coCpsId } = req.query;
   let filtered;
   
   if (role === 'co') {
     if (status) {
-      // Filter by specific status for CO
-      filtered = requests.filter(r => r.status === status);
+      // Filter by specific status for CO and their CPS ID
+      filtered = requests.filter(r => r.status === status && r.details.coCpsId === coCpsId);
     } else {
-      // Default: show pending requests
-      filtered = requests.filter(r => r.status === 'pending_co');
+      // Default: show pending requests for specific CO
+      filtered = requests.filter(r => r.status === 'pending_co' && r.details.coCpsId === coCpsId);
     }
   } else if (role === 'admin') {
     if (status) {

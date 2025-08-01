@@ -12,15 +12,18 @@ function CoDashboard({ coUserId }) {
 
   useEffect(() => {
     setLoading(true);
-    api.getRequests({ role: 'co' })
+    // Use the user's CPS ID (cpfNumber) as the CO's CPS ID for filtering
+    const coCpsId = user?.cpfNumber || coUserId;
+    api.getRequests({ role: 'co', coCpsId })
       .then(setRequests)
       .catch(setError)
       .finally(() => setLoading(false));
-  }, []);
+  }, [user, coUserId]);
 
   const handleAction = async (id, status) => {
     try {
-      await api.updateRequestStatus({ id, status, actedBy: coUserId || 'coUserId' });
+      const actedBy = user?.cpfNumber || coUserId || 'coUserId';
+      await api.updateRequestStatus({ id, status, actedBy });
       setRequests(reqs => reqs.filter(r => r.id !== id));
     } catch (err) {
       setError('Failed to update request');
@@ -39,7 +42,7 @@ function CoDashboard({ coUserId }) {
     <div className="container">
       <div className="header fade-in">
         <h1>CO Dashboard</h1>
-        <p>Welcome, {user?.name || 'CO'}! Review vehicle booking requests</p>
+        <p>Welcome, {user?.name || 'CO'}! Review vehicle booking requests for your CPS ID: {user?.cpfNumber || coUserId}</p>
       </div>
       
       <div className="card fade-in">
@@ -62,7 +65,7 @@ function CoDashboard({ coUserId }) {
         {requests.length === 0 ? (
           <div style={{ textAlign: "center", padding: "40px", color: "#666" }}>
             <h3>No requests pending CO review</h3>
-            <p>When employees submit requests, they will appear here for your review.</p>
+            <p>When employees submit requests with your CPS ID ({user?.cpfNumber || coUserId}), they will appear here for your review.</p>
           </div>
         ) : (
           requests.map(req => (
@@ -77,6 +80,9 @@ function CoDashboard({ coUserId }) {
                   </div>
                   <div style={{ color: "#666", marginBottom: "10px" }}>
                     <strong>Submitted:</strong> {new Date(req.details.submittedAt).toLocaleDateString()}
+                  </div>
+                  <div style={{ color: "#666", marginBottom: "10px" }}>
+                    <strong>CO CPS ID:</strong> {req.details.coCpsId}
                   </div>
                 </div>
                 <div style={{

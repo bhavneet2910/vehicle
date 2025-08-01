@@ -86,6 +86,9 @@ const AdminDashboard = () => {
                     <div style={{ color: "#666", marginBottom: "10px" }}>
                       <strong>Submitted:</strong> {new Date(req.details.submittedAt).toLocaleDateString()}
                     </div>
+                    <div style={{ color: "#666", marginBottom: "10px" }}>
+                      <strong>CO CPS ID:</strong> {req.details.coCpsId}
+                    </div>
                   </div>
                   <div style={{
                     padding: "8px 16px",

@@ -20,7 +20,8 @@ const VehicleSelectionPage = () => {
     returnTime: "",
     destination: "",
     purpose: "",
-    passengers: 1
+    passengers: 1,
+    coCpsId: ""
   });
 
   // Sample vehicle data
@@ -195,6 +196,7 @@ const VehicleSelectionPage = () => {
       destination: bookingData.destination,
       purpose: bookingData.purpose,
       passengers: bookingData.passengers,
+      coCpsId: bookingData.coCpsId,
       status: "pending",
       submittedAt: new Date().toISOString()
     };
@@ -231,7 +233,8 @@ const VehicleSelectionPage = () => {
         returnTime: "",
         destination: "",
         purpose: "",
-        passengers: 1
+        passengers: 1,
+        coCpsId: ""
       });
       
       // Reload user requests to show the new request
@@ -459,6 +462,18 @@ const VehicleSelectionPage = () => {
                 }}
                 min="1"
                 max={selectedVehicle.capacity}
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">CO's CPS ID</label>
+              <input
+                type="text"
+                className="form-input"
+                value={bookingData.coCpsId}
+                onChange={(e) => setBookingData({...bookingData, coCpsId: e.target.value})}
+                placeholder="Enter your CO's CPS ID"
                 required
               />
             </div>

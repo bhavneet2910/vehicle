@@ -42,10 +42,13 @@ const api = {
     return res.json();
   },
 
-  getRequests: async ({ role, employeeId, status }) => {
+  getRequests: async ({ role, employeeId, status, coCpsId }) => {
     let url = `${API_BASE_URL}/requests?role=${role}`;
     if (role === 'employee' && employeeId) {
       url += `&employeeId=${employeeId}`;
+    }
+    if (role === 'co' && coCpsId) {
+      url += `&coCpsId=${coCpsId}`;
     }
     if (status) {
       url += `&status=${status}`;

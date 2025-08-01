@@ -30,7 +30,12 @@ const RequestHistory = () => {
           data = await api.getCompletedRequests();
           break;
         default:
-          data = await api.getRequests({ role: user.role });
+          // For CO users, filter by their CPS ID
+          if (user.role === 'co') {
+            data = await api.getRequests({ role: user.role, coCpsId: user.cpfNumber });
+          } else {
+            data = await api.getRequests({ role: user.role });
+          }
       }
       setRequests(data);
     } catch (err) {
@@ -90,7 +95,10 @@ const RequestHistory = () => {
     <div className="container">
       <div className="header fade-in">
         <h1>Request History</h1>
-        <p>View all vehicle booking requests and their status</p>
+        <p>
+          View all vehicle booking requests and their status
+          {user.role === 'co' && ` for your CPS ID: ${user.cpfNumber}`}
+        </p>
       </div>
       
       <div className="card fade-in">
@@ -201,6 +209,9 @@ const RequestHistory = () => {
                         </div>
                         <div style={{ color: "#666", marginBottom: "10px" }}>
                           <strong>Employee ID:</strong> {req.employeeId}
+                        </div>
+                        <div style={{ color: "#666", marginBottom: "10px" }}>
+                          <strong>CO CPS ID:</strong> {req.details.coCpsId}
                         </div>
                         <div style={{ color: "#666", marginBottom: "10px" }}>
                           <strong>Submitted:</strong> {new Date(req.details.submittedAt).toLocaleDateString()}
